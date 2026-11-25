@@ -1,0 +1,243 @@
+---
+// src/pages/reservas/[id]/imprimir.astro
+export const prerender = false;
+import "../../../styles/global.css";
+import { supabaseServer } from "../../../lib/supabase";
+import { rowToReservation, type ReservationRow } from "../../../lib/types";
+import { AGENCY } from "../../../lib/utils";
+import type { FlightLeg } from "../../../lib/types";
+
+// Reemplaza esto por un import real una vez que agregues el logo a src/assets,
+// p.ej.: import moranLogo from '../../../assets/moran-logo.png';
+// El HTML original traía el logo como un data URI base64 gigante embebido
+// en el JS; moverlo a un archivo real en /src/assets es mejor práctica
+// (Astro lo optimiza y cachea en vez de inflar cada respuesta).
+const MORAN_LOGO_SRC = "/logo-moran.jpeg"; // colócalo en /public/moran-logo.png mientras tanto
+const IATA_LOGO_SRC =
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f7/IATAlogo.svg/250px-IATAlogo.svg.png";
+
+const { id } = Astro.params;
+const { data, error } = await supabaseServer
+  .from("reservations")
+  .select("*")
+  .eq("id", id)
+  .single();
+if (error || !data) return Astro.redirect("/");
+
+const r = rowToReservation(data as ReservationRow);
+const outLegs = r.outboundFlights.filter(
+  (f) => f.airline || f.flightNumber || f.depAirport,
+);
+const retLegs = r.hasReturn
+  ? r.returnFlights.filter((f) => f.airline || f.flightNumber || f.depAirport)
+  : [];
+const dest =
+  r.outboundFlights.at(-1)?.arrCity ||
+  r.outboundFlights.at(-1)?.arrAirport ||
+  "";
+
+function FlightBlock(f: FlightLeg) {
+  const bags: string[] = ["Artículo personal"];
+  if (f.carryOn) bags.push("Equipaje de mano (10kg)");
+  if (f.checkedBaggage) {
+    const pieces = f.checkedPieces || "1";
+    bags.push(`${pieces}× documentado ${f.checkedWeight || "23"}kg`);
+  }
+  const baggageLine = bags
+    .map((b) => `<span class="inline-flex items-center gap-0.5">✓ ${b}</span>`)
+    .join(`<span class="mx-1.5 text-line">|</span>`);
+
+  return `
+    <div class="border border-line rounded-card-sm p-3 mb-2">
+      <div class="flex justify-between text-xs font-semibold text-navy mb-1">
+        <span>${f.airline} ${f.flightNumber}</span><span>${f.date}</span>
+      </div>
+      <div class="flex justify-between items-center gap-4">
+        <div><div class="text-[10px] uppercase text-muted">Salida</div>
+          <div class="font-mono font-bold text-navy">${f.depTime}</div>
+          <div class="text-[11px] text-muted">${f.depAirport}${f.depCity ? " · " + f.depCity : ""}</div></div>
+        <div class="flex-1 text-center text-[11px] text-muted">${f.duration}<br/>✈</div>
+        <div class="text-right"><div class="text-[10px] uppercase text-muted">Llegada</div>
+          <div class="font-mono font-bold text-navy">${f.arrTime}</div>
+          <div class="text-[11px] text-muted">${f.arrAirport}${f.arrCity ? " · " + f.arrCity : ""}</div></div>
+      </div>
+      <div class="text-[10px] text-muted mt-2 pt-2 border-t border-line">${baggageLine}</div>
+    </div>`;
+}
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="color-scheme" content="light" />
+    <meta name="darkreader-lock" />
+    <title>Reserva {r.reservationCode || r.clientName}</title>
+  </head>
+  <body class="bg-white">
+    <div
+      id="printArea"
+      class="max-w-[800px] mx-auto bg-white p-8 my-6 border border-line rounded-card"
+    >
+      <div class="flex items-center justify-between mb-6">
+        <img
+          src={IATA_LOGO_SRC}
+          alt="IATA"
+          class="max-h-[55px] w-auto object-contain"
+        />
+
+        <div class="flex items-center gap-4">
+          <img
+            src={MORAN_LOGO_SRC}
+            alt="Moran Solutions"
+            class="max-h-[82px] w-auto object-contain"
+          />
+          <div class="text-[11px] text-muted text-right leading-relaxed">
+            Tel. {AGENCY.phone}<br />{AGENCY.social}<br />{AGENCY.email}
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-5">
+        <div class="flex items-center gap-2 mb-1">
+          <span class="text-xs text-muted font-mono">No. de reserva:</span>
+          <span
+            class="font-mono font-bold text-base text-navy tracking-widest border-2 border-navy rounded-card-sm px-2.5 py-0.5"
+            >{r.reservationCode || "—"}</span
+          >
+        </div>
+        <h2 class="font-display font-bold text-xl text-navy">
+          Reserva de vuelo{dest ? ` para ${dest.toUpperCase()}` : ""}
+        </h2>
+      </div>
+
+      <table
+        class="w-full text-sm mb-6 border border-line rounded-card-sm overflow-hidden"
+      >
+        <thead class="bg-white text-navy text-xs uppercase border-b-2 border-navy">
+          <tr>
+            <th class="p-2 text-left">Pasaporte</th>
+            <th class="p-2 text-left">Pasajero</th>
+            <th class="p-2 text-left">N.º de ticket</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="border-t border-line">
+            <td class="p-2">{r.passportNumber || "—"}</td>
+            <td class="p-2">{r.clientName || "—"}</td>
+            <td class="p-2">{r.ticketNumber || "—"}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="font-display font-bold text-navy mb-2">✈ Vuelos de ida</div>
+      {
+        outLegs.length ? (
+          <Fragment set:html={outLegs.map(FlightBlock).join("")} />
+        ) : (
+          <p class="text-xs text-muted">Sin datos de vuelo registrados.</p>
+        )
+      }
+
+      {
+        r.hasReturn && (
+          <>
+            <div class="font-display font-bold text-navy mt-4 mb-2">
+              ✈ Vuelos de regreso
+            </div>
+            {retLegs.length ? (
+              <Fragment set:html={retLegs.map(FlightBlock).join("")} />
+            ) : (
+              <p class="text-xs text-muted">Sin datos de vuelo registrados.</p>
+            )}
+          </>
+        )
+      }
+
+      <div class="font-display font-bold text-navy mt-5 mb-1">
+        Observaciones de la reserva
+      </div>
+      <div class="text-[11px] text-muted leading-relaxed" set:html={r.notes} />
+
+      <div class="text-center mt-6 pt-4 border-t border-line">
+        <div class="font-display italic text-navy">
+          Gracias por su preferencia. ¡Buen viaje!
+        </div>
+      </div>
+    </div>
+
+    <style is:global>
+      @page {
+        size: A4;
+        margin: 8mm;
+      }
+      html,
+      body {
+        background: #fff !important;
+        color-scheme: light;
+      }
+      * {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      @media print {
+        /* Anula las reglas de global.css (visibility/absolute) que cortaban el PDF */
+        body * {
+          visibility: visible !important;
+        }
+        #printArea {
+          position: static !important;
+          margin: 0 auto !important;
+          max-width: none !important;
+          padding: 0 !important;
+          border: 0 !important;
+          border-radius: 0 !important;
+          box-shadow: none !important;
+          background: #fff !important;
+        }
+      }
+    </style>
+
+    <script>
+      // Ajusta TODO el contenido a UNA sola página A4: si hay mucho texto
+      // en las observaciones, reduce la escala; si cabe, no toca nada.
+      const PAGE_W = 194 * 3.7795; // A4 (210mm) - márgenes 8mm*2, en px CSS
+      const PAGE_H = 279 * 3.7795; // A4 (297mm) - márgenes, con 2mm de holgura
+
+      function fitToOnePage() {
+        const el = document.getElementById("printArea") as HTMLElement | null;
+        if (!el) return;
+        el.style.zoom = "1";
+        el.style.width = PAGE_W + "px";
+        el.style.maxWidth = "none";
+        el.style.padding = "0";
+        el.style.margin = "0";
+        el.style.border = "0";
+        el.style.borderRadius = "0";
+
+        let z = 1;
+        // Reduce paso a paso hasta que quepa (mínimo 45%).
+        while (z > 0.45) {
+          el.style.zoom = String(z);
+          el.style.width = PAGE_W / z + "px";
+          if (el.scrollHeight * z <= PAGE_H) break;
+          z -= 0.03;
+        }
+      }
+
+      function resetScreen() {
+        const el = document.getElementById("printArea") as HTMLElement | null;
+        if (!el) return;
+        ["zoom", "width", "maxWidth", "padding", "margin", "border", "borderRadius"].forEach(
+          (k) => ((el.style as any)[k] = ""),
+        );
+      }
+
+      window.addEventListener("beforeprint", fitToOnePage);
+      window.addEventListener("afterprint", resetScreen);
+      window.addEventListener("load", () =>
+        setTimeout(() => window.print(), 300),
+      );
+    </script>
+  </body>
+</html>

@@ -1,0 +1,69 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap');
+@import "tailwindcss";
+
+/* Tailwind v4: el theme se define en CSS con @theme */
+@theme {
+    --color-navy: #0A2540;
+    --color-navy-soft: #10385C;
+    --color-iata: #017CBF;
+    --color-moran: #286B9B;
+    --color-blue-pale: #E6F2FA;
+    --color-cream: #F0F4F8;
+    --color-line: #D0DFE9;
+    --color-ink: #1D2430;
+    --color-muted: #5B6B79;
+    --color-good: #2F7D5D;
+    --color-good-bg: #E9F4EE;
+    --color-warn: #B8722C;
+    --color-warn-bg: #FBEEE0;
+    --color-bad: #B3452E;
+    --color-bad-bg: #FBEAE5;
+
+    --font-display: "Playfair Display", serif;
+    --font-body: Inter, sans-serif;
+    --font-mono: "JetBrains Mono", monospace;
+
+    --radius-card: 14px;
+    --radius-card-sm: 9px;
+
+    --shadow-card: 0 1px 2px rgba(1, 124, 191, .04), 0 8px 24px -12px rgba(10, 37, 64, .18);
+}
+
+@layer base {
+
+    /* Un solo color de fondo en toda la pantalla (antes el <body> solo cubría
+       el alto del contenido y el resto del <html> se veía de otro color). */
+    html {
+        background-color: var(--color-cream);
+        color-scheme: light;
+        min-height: 100%;
+    }
+
+    body {
+        min-height: 100vh;
+        @apply bg-cream text-ink font-body antialiased;
+    }
+
+    :focus-visible {
+        @apply outline outline-2 outline-iata outline-offset-2;
+    }
+}
+
+@layer utilities {
+
+    /* Solo la reserva marcada visible al imprimir/generar el PDF */
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+
+        #printArea,
+        #printArea * {
+            visibility: visible;
+        }
+
+        #printArea {
+            @apply block absolute inset-0 w-full;
+        }
+    }
+}

@@ -1,0 +1,60 @@
+---
+// src/pages/login.astro
+export const prerender = false;
+import Layout from '../layouts/Layout.astro';
+import { ACCESS_COOKIE } from '../lib/auth';
+
+// Si ya tiene sesión, directo al listado (el middleware valida el token real).
+if (Astro.cookies.get(ACCESS_COOKIE)?.value) return Astro.redirect('/');
+
+const hasError = Astro.url.searchParams.has('error');
+---
+<Layout title="Iniciar sesión">
+  <div class="min-h-[70vh] flex items-center justify-center">
+    <form
+      method="POST"
+      action="/api/auth/login"
+      class="w-full max-w-sm bg-white border border-line rounded-card shadow-card p-7 flex flex-col gap-4"
+    >
+      <div class="text-center">
+        <h1 class="font-display font-extrabold text-xl text-navy">MORAN SOLUTIONS</h1>
+        <span class="text-[11px] tracking-wide text-muted">GESTOR DE RESERVAS</span>
+      </div>
+
+      {hasError && (
+        <div class="text-xs font-semibold text-bad bg-bad-bg rounded-card-sm px-3 py-2">
+          Correo o contraseña incorrectos.
+        </div>
+      )}
+
+      <label class="flex flex-col gap-1 text-xs font-medium text-muted">
+        Correo
+        <input
+          type="email"
+          name="email"
+          required
+          autocomplete="email"
+          class="text-sm text-ink border border-line rounded-card-sm px-3 py-2 focus:border-iata"
+        />
+      </label>
+
+      <label class="flex flex-col gap-1 text-xs font-medium text-muted">
+        Contraseña
+        <input
+          type="password"
+          name="password"
+          required
+          autocomplete="current-password"
+          class="text-sm text-ink border border-line rounded-card-sm px-3 py-2 focus:border-iata"
+        />
+      </label>
+
+      <button
+        type="submit"
+        class="text-sm font-semibold px-4 py-2 rounded-card-sm bg-iata text-white hover:bg-navy transition cursor-pointer"
+      >
+        Entrar
+      </button>
+    </form>
+  </div>
+</Layout>

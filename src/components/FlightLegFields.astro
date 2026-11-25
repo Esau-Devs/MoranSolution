@@ -1,0 +1,135 @@
+---
+import type { FlightLeg, FlightLegTextKey } from "../lib/types";
+
+interface Props {
+  leg: FlightLeg;
+  index: number;
+  group: "outbound" | "return";
+}
+const { leg, index, group } = Astro.props;
+
+const fields: Array<[FlightLegTextKey, string, string?]> = [
+  ["airline", "Aerolínea"],
+  ["flightNumber", "N.º de vuelo"],
+  ["date", "Fecha", "09 nov. 2026"],
+  ["depAirport", "Aeropuerto salida", "SAL"],
+  ["depCity", "Ciudad salida"],
+  ["depTime", "Hora salida", "17:35"],
+  ["arrAirport", "Aeropuerto llegada", "ONT"],
+  ["arrCity", "Ciudad llegada"],
+  ["arrTime", "Hora llegada", "21:00"],
+  ["duration", "Duración", "05h 20m"],
+];
+---
+
+<div
+  class="leg-block border border-line rounded-card-sm p-4 mb-3"
+  data-group={group}
+  data-idx={index}
+>
+  <div class="flex items-center justify-between mb-3">
+    <span class="text-xs font-semibold uppercase tracking-wide text-muted"
+      >Tramo {index + 1}</span
+    >
+    <button
+      type="button"
+      data-act="removeLeg"
+      data-group={group}
+      data-idx={index}
+      class="text-xs font-semibold text-bad hover:underline cursor-pointer"
+      >Quitar</button
+    >
+  </div>
+  <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+    {
+      fields.map(([key, label, placeholder]) => (
+        <label class="flex flex-col gap-1 text-xs font-medium text-muted">
+          {label}
+          <input
+            type="text"
+            data-f={key}
+            value={leg[key] ?? ""}
+            placeholder={placeholder ?? ""}
+            class="text-sm text-ink border border-line rounded-card-sm px-2.5 py-1.5 focus:border-iata bg-white outline-none"
+          />
+        </label>
+      ))
+    }
+  </div>
+
+  <!-- Equipaje -->
+  <div class="baggage-block border-t border-line pt-3 mt-3">
+    <span
+      class="text-xs font-semibold uppercase tracking-wide text-muted block mb-2"
+      >Equipaje</span
+    >
+    <div class="flex flex-wrap items-center gap-x-5 gap-y-2">
+      <label
+        class="flex items-center gap-1.5 text-xs text-muted cursor-not-allowed"
+      >
+        <input
+          type="checkbox"
+          checked
+          disabled
+          class="w-3.5 h-3.5 accent-iata"
+        />
+        Artículo personal <span class="text-[10px]">(incluido siempre)</span>
+      </label>
+
+      <label
+        class="flex items-center gap-1.5 text-xs font-medium text-ink cursor-pointer"
+      >
+        <input
+          type="checkbox"
+          data-f="carryOn"
+          checked={leg.carryOn}
+          class="w-3.5 h-3.5 accent-iata cursor-pointer"
+        />
+        Equipaje de mano <span class="text-muted font-normal">(10 kg)</span>
+      </label>
+
+      <label
+        class="flex items-center gap-1.5 text-xs font-medium text-ink cursor-pointer"
+      >
+        <input
+          type="checkbox"
+          data-f="checkedBaggage"
+          data-toggle="checkedOpts"
+          checked={leg.checkedBaggage}
+          class="w-3.5 h-3.5 accent-iata cursor-pointer"
+        />
+        Equipaje documentado
+      </label>
+
+      <div
+        class="checked-opts flex items-center gap-3"
+        style={leg.checkedBaggage ? "" : "display:none"}
+      >
+        <label class="flex items-center gap-1 text-xs text-muted">
+          Piezas
+          <input
+            type="number"
+            min="1"
+            data-f="checkedPieces"
+            value={leg.checkedPieces || "1"}
+            class="w-14 text-sm text-ink border border-line rounded-card-sm px-1.5 py-1 focus:border-iata"
+          />
+        </label>
+        <label class="flex items-center gap-1 text-xs text-muted">
+          Peso
+          <select
+            data-f="checkedWeight"
+            class="text-sm text-ink border border-line rounded-card-sm px-1.5 py-1 focus:border-iata"
+          >
+            <option value="23" selected={leg.checkedWeight !== "25"}
+              >23 kg</option
+            >
+            <option value="25" selected={leg.checkedWeight === "25"}
+              >25 kg</option
+            >
+          </select>
+        </label>
+      </div>
+    </div>
+  </div>
+</div>

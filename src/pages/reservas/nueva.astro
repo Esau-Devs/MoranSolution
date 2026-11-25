@@ -1,0 +1,9 @@
+---
+// src/pages/reservas/nueva.astro
+export const prerender = false;
+import Layout from '../../layouts/Layout.astro';
+import ReservationForm from '../../components/ReservationForm.astro';
+---
+<Layout title="Nueva reserva">
+  <ReservationForm />
+</Layout>

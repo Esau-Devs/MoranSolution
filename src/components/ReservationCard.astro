@@ -1,0 +1,88 @@
+---
+// src/components/ReservationCard.astro
+import type { Reservation } from "../lib/types";
+import { routeSummary } from "../lib/utils";
+
+interface Props {
+  reservation: Reservation;
+}
+const { reservation: r } = Astro.props;
+const isRoundTrip = r.hasReturn && r.returnFlights.length > 0;
+---
+
+<div
+  class="bg-white border border-line rounded-card shadow-card p-5 flex flex-col gap-2"
+  data-reservation-id={r.id}
+>
+  <div class="flex items-start justify-between gap-4">
+    <div>
+      <p class="font-display font-bold text-lg text-navy">
+        {r.clientName || "Sin nombre"}
+      </p>
+      <div class="flex items-center gap-2 mt-0.5">
+        <span
+          class="text-sm font-mono font-bold text-navy tracking-wider bg-blue-pale border border-iata/30 rounded px-2 py-0.5"
+          >{r.reservationCode || "s/código"}</span
+        >
+        {r.pnr && <span class="text-xs text-muted font-mono">PNR {r.pnr}</span>}
+      </div>
+    </div>
+    <span
+      class={`text-xs font-semibold px-2.5 py-1 rounded-full ${isRoundTrip ? "bg-good-bg text-good" : "bg-blue-pale text-iata"}`}
+    >
+      {isRoundTrip ? "Ida y vuelta" : "Solo ida"}
+    </span>
+  </div>
+
+  <div class="flex items-center gap-2 text-sm font-semibold text-navy">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      class="w-4 h-4 text-iata"
+    >
+      <path d="M2 16l20-8-8 20-3-8-8-4z"></path>
+    </svg>
+    {routeSummary(r)}
+  </div>
+  <div class="text-xs text-muted">
+    {
+      r.outboundFlights?.[0]?.date
+        ? `Sale ${r.outboundFlights[0].date}`
+        : "Sin fecha registrada"
+    }
+  </div>
+
+  <div class="flex gap-2 mt-2 pt-3 border-t border-line">
+    <a href={`/reservas/${r.id}`} class="btn-ghost">Ver / Editar</a>
+    <a href={`/reservas/${r.id}/imprimir`} target="_blank" class="btn-gold"
+      >Generar PDF</a
+    >
+    <button
+      type="button"
+      data-act="delete"
+      data-id={r.id}
+      class="btn-danger cursor-pointer">Eliminar</button
+    >
+  </div>
+</div>
+
+<style>
+  /* Tailwind v4: @apply en un archivo/bloque que no sea la hoja de entrada
+     (global.css) necesita @reference para saber qué utilidades existen aquí.
+     No genera CSS extra, solo le da contexto a este bloque <style>. */
+  @reference "../styles/global.css";
+
+  /* Botones compartidos por variante; @apply mantiene Tailwind pero evita
+     repetir 6 clases en cada <a>/<button> del componente. */
+  .btn-ghost {
+    @apply text-xs font-semibold px-3 py-1.5 rounded-card-sm border border-line text-navy hover:bg-blue-pale transition;
+  }
+  .btn-gold {
+    @apply text-xs font-semibold px-3 py-1.5 rounded-card-sm bg-moran text-white hover:bg-navy transition;
+  }
+  .btn-danger {
+    @apply text-xs font-semibold px-3 py-1.5 rounded-card-sm bg-bad-bg text-bad hover:bg-bad hover:text-white transition ml-auto;
+  }
+</style>

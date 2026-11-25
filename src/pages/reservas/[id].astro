@@ -1,0 +1,20 @@
+---
+// src/pages/reservas/[id].astro
+export const prerender = false;
+import Layout from '../../layouts/Layout.astro';
+import ReservationForm from '../../components/ReservationForm.astro';
+import { supabaseServer } from '../../lib/supabase';
+import { rowToReservation, type ReservationRow } from '../../lib/types';
+
+const { id } = Astro.params;
+const { data, error } = await supabaseServer.from('reservations').select('*').eq('id', id).single();
+
+if (error || !data) {
+  return Astro.redirect('/');
+}
+
+const reservation = rowToReservation(data as ReservationRow);
+---
+<Layout title={`Editar · ${reservation.clientName || 'Reserva'}`}>
+  <ReservationForm reservation={reservation} />
+</Layout>
